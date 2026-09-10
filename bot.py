@@ -79,6 +79,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text("⏳ دانلود شروع شد؛ لطفاً صبر کن...")
     await context.bot.send_chat_action(query.message.chat_id, ChatAction.UPLOAD_DOCUMENT)
 
+    file_path = None
     try:
         result = await asyncio.to_thread(download_media, url, mode)
         file_path = result["path"]
@@ -102,7 +103,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as exc:
         await query.message.reply_text(f"❌ دانلود انجام نشد.\n{str(exc)[:500]}")
     finally:
-        if 'file_path' in locals() and file_path:
+        if file_path:
             try:
                 Path(file_path).unlink(missing_ok=True)
                 shutil.rmtree(Path(file_path).parent, ignore_errors=True)
@@ -126,6 +127,9 @@ def download_media(url: str, mode: str):
         "restrictfilenames": True,
         "retries": 3,
         "fragment_retries": 3,
+        # Prefer a playable format, but always fall back instead of failing
+        # when a particular YouTube format combination is unavailable.
+        "ignoreerrors": False,
     }
 
     if mode == "audio":
@@ -139,23 +143,39 @@ def download_media(url: str, mode: str):
             }],
         }
     else:
-        # Prefer MP4 that can be downloaded without requiring a separate merge when possible.
+        # Robust selector: prefer <=720p video+audio, then a progressive
+        # <=720p stream, then any single best stream. This avoids the
+        # 'Requested format is not available' failure on videos that do not
+        # expose the exact MP4/height combination.
         opts = {
             **common,
-            "format": "best[ext=mp4][height<=720]/best[height<=720]/best",
+            "format": "bv*[height<=720]+ba/b[height<=720]/b",
             "merge_output_format": "mp4",
         }
 
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        title = info.get("title", "youtube")
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            if not info:
+                raise RuntimeError("yt-dlp نتوانست این ویدیو را دانلود کند")
+            title = info.get("title", "youtube")
+    except Exception as first_error:
+        # Final fallback for unusual YouTube format manifests.
+        if mode != "audio":
+            fallback = {**common, "format": "best", "merge_output_format": "mp4"}
+            with yt_dlp.YoutubeDL(fallback) as ydl:
+                info = ydl.extract_info(url, download=True)
+                if not info:
+                    raise first_error
+                title = info.get("title", "youtube")
+        else:
+            raise
 
     files = [p for p in Path(workdir).iterdir() if p.is_file()]
     if not files:
         shutil.rmtree(workdir, ignore_errors=True)
         raise RuntimeError("فایل دانلودشده پیدا نشد")
 
-    # Prefer the requested extension.
     ext = ".mp3" if mode == "audio" else ".mp4"
     preferred = [p for p in files if p.suffix.lower() == ext]
     path = preferred[0] if preferred else files[0]
