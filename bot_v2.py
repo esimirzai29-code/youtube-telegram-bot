@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import os
 import re
 import shutil
@@ -24,8 +25,28 @@ def get_url(text):
     return m.group(0).rstrip(".,)>]}\"'") if m else None
 
 
-def base_opts():
-    return {
+def get_cookie_file():
+    """Create a temporary Netscape cookies.txt from a Railway secret, if configured."""
+    b64 = os.environ.get("YOUTUBE_COOKIES_B64")
+    raw = os.environ.get("YOUTUBE_COOKIES")
+    if not b64 and not raw:
+        return None
+    fd, path = tempfile.mkstemp(prefix="ytcookies_", suffix=".txt")
+    os.close(fd)
+    try:
+        if b64:
+            data = base64.b64decode(b64).decode("utf-8")
+        else:
+            data = raw
+        Path(path).write_text(data, encoding="utf-8")
+        return path
+    except Exception:
+        Path(path).unlink(missing_ok=True)
+        raise
+
+
+def base_opts(cookie_file=None):
+    opts = {
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
@@ -34,11 +55,19 @@ def base_opts():
             "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1"
         },
     }
+    if cookie_file:
+        opts["cookiefile"] = cookie_file
+    return opts
 
 
 def extract_info(url):
-    with yt_dlp.YoutubeDL({**base_opts(), "skip_download": True}) as ydl:
-        return ydl.extract_info(url, download=False)
+    cookie_file = get_cookie_file()
+    try:
+        with yt_dlp.YoutubeDL({**base_opts(cookie_file), "skip_download": True}) as ydl:
+            return ydl.extract_info(url, download=False)
+    finally:
+        if cookie_file:
+            Path(cookie_file).unlink(missing_ok=True)
 
 
 def get_s3_client():
@@ -96,7 +125,8 @@ async def handle_url(update, context):
 def download_media(url, mode):
     wd = tempfile.mkdtemp(prefix="ytbot_")
     out = os.path.join(wd, "%(title).80s.%(ext)s")
-    common = {**base_opts(), "outtmpl": out, "restrictfilenames": True, "retries": 3, "fragment_retries": 3}
+    cookie_file = get_cookie_file()
+    common = {**base_opts(cookie_file), "outtmpl": out, "restrictfilenames": True, "retries": 3, "fragment_retries": 3}
     if mode == "audio":
         opts = {
             **common,
@@ -117,6 +147,9 @@ def download_media(url, mode):
     except Exception:
         shutil.rmtree(wd, ignore_errors=True)
         raise
+    finally:
+        if cookie_file:
+            Path(cookie_file).unlink(missing_ok=True)
 
 
 async def button(update, context):
