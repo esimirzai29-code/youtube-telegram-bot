@@ -26,7 +26,6 @@ def get_url(text):
 
 
 def get_cookie_file():
-    """Create a temporary Netscape cookies.txt from a Railway secret, if configured."""
     b64 = os.environ.get("YOUTUBE_COOKIES_B64")
     raw = os.environ.get("YOUTUBE_COOKIES")
     if not b64 and not raw:
@@ -34,10 +33,7 @@ def get_cookie_file():
     fd, path = tempfile.mkstemp(prefix="ytcookies_", suffix=".txt")
     os.close(fd)
     try:
-        if b64:
-            data = base64.b64decode(b64).decode("utf-8")
-        else:
-            data = raw
+        data = base64.b64decode(b64).decode("utf-8") if b64 else raw
         Path(path).write_text(data, encoding="utf-8")
         return path
     except Exception:
@@ -75,14 +71,7 @@ def get_s3_client():
     missing = [x for x in required if not os.environ.get(x)]
     if missing:
         raise RuntimeError("Object Storage configuration is missing: " + ", ".join(missing))
-    return boto3.client(
-        "s3",
-        endpoint_url=os.environ["S3_ENDPOINT"],
-        region_name=os.environ["S3_REGION"],
-        aws_access_key_id=os.environ["S3_ACCESS_KEY"],
-        aws_secret_access_key=os.environ["S3_SECRET_KEY"],
-        config=Config(signature_version="s3v4"),
-    )
+    return boto3.client("s3", endpoint_url=os.environ["S3_ENDPOINT"], region_name=os.environ["S3_REGION"], aws_access_key_id=os.environ["S3_ACCESS_KEY"], aws_secret_access_key=os.environ["S3_SECRET_KEY"], config=Config(signature_version="s3v4"))
 
 
 def upload_and_get_link(file_path, title, mode):
@@ -91,11 +80,7 @@ def upload_and_get_link(file_path, title, mode):
     key = f"downloads/{safe_name(title)}-{os.urandom(6).hex()}{ext}"
     content_type = "audio/mpeg" if mode == "audio" else "video/mp4"
     s3.upload_file(file_path, os.environ["S3_BUCKET_NAME"], key, ExtraArgs={"ContentType": content_type})
-    return s3.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": os.environ["S3_BUCKET_NAME"], "Key": key},
-        ExpiresIn=LINK_EXPIRES,
-    )
+    return s3.generate_presigned_url("get_object", Params={"Bucket": os.environ["S3_BUCKET_NAME"], "Key": key}, ExpiresIn=LINK_EXPIRES)
 
 
 async def start(update, context):
@@ -113,10 +98,7 @@ async def handle_url(update, context):
         title = info.get("title", "YouTube video")
         d = info.get("duration")
         dt = f"\n⏱ مدت: {d//60}:{d%60:02d}" if d else ""
-        kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🎥 ویدیو MP4", callback_data="video")],
-            [InlineKeyboardButton("🎵 صدا MP3", callback_data="audio")],
-        ])
+        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🎥 ویدیو MP4", callback_data="video")], [InlineKeyboardButton("🎵 صدا MP3", callback_data="audio")]])
         await msg.edit_text(f"🎬 {title}{dt}\n\nفرمت را انتخاب کن:", reply_markup=kb)
     except Exception as e:
         await msg.edit_text(f"❌ نتونستم اطلاعات ویدیو را بگیرم.\n{type(e).__name__}: {str(e)[:300]}")
@@ -128,11 +110,7 @@ def download_media(url, mode):
     cookie_file = get_cookie_file()
     common = {**base_opts(cookie_file), "outtmpl": out, "restrictfilenames": True, "retries": 3, "fragment_retries": 3}
     if mode == "audio":
-        opts = {
-            **common,
-            "format": "bestaudio/best",
-            "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "128"}],
-        }
+        opts = {**common, "format": "bestaudio/best", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "128"}]}
     else:
         opts = {**common, "format": "best[ext=mp4][height<=720]/best[height<=720]/best", "merge_output_format": "mp4"}
     try:
@@ -159,27 +137,19 @@ async def button(update, context):
     info = context.user_data.get("yt_info")
     if not url or not info:
         return await q.edit_message_text("❌ لینک منقضی شده. دوباره لینک را بفرست.")
-
     mode = q.data
     await q.edit_message_text("⏳ دانلود شروع شد؛ لطفاً صبر کن...")
     await context.bot.send_chat_action(q.message.chat_id, ChatAction.UPLOAD_DOCUMENT)
     file_path = None
     try:
         r = await asyncio.to_thread(download_media, url, mode)
-        file_path = r["path"]
-        title = r["title"]
+        file_path, title = r["path"], r["title"]
         size = os.path.getsize(file_path)
-
         if size > MAX_FILE_SIZE:
             await q.message.reply_text("📦 فایل بزرگ است؛ در حال آپلود روی فضای ابری...")
             link = await asyncio.to_thread(upload_and_get_link, file_path, title, mode)
-            await q.message.reply_text(
-                "✅ فایل آماده شد!\n\n"
-                "📥 حجم فایل: " + f"{size / (1024 * 1024):.1f} MB" + "\n"
-                "⏳ لینک تا ۲۴ ساعت معتبر است:\n" + link
-            )
+            await q.message.reply_text(f"✅ فایل آماده شد!\n\n📥 حجم فایل: {size / (1024 * 1024):.1f} MB\n⏳ لینک تا ۲۴ ساعت معتبر است:\n{link}")
             return
-
         with open(file_path, "rb") as f:
             if mode == "audio":
                 await q.message.reply_audio(audio=f, filename=f"{safe_name(title)}.mp3", title=title[:64])
