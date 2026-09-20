@@ -59,6 +59,10 @@ python3 security-audit/wp-vuln-scan.py https://your-site.com
 # Exploit-precondition check + penetration verdict (Python 3)
 python3 security-audit/wp-exposure-check.py https://your-site.com
 
+# Generic web-app scan: TLS, headers, cookies, methods,
+# sensitive paths, robots/sitemap, open redirect (Python 3)
+python3 security-audit/web-app-scan.py https://your-site.com
+
 # Endpoint + header + SSL check (bash)
 ./security-audit/wp-security-check.sh https://your-site.com
 ```
