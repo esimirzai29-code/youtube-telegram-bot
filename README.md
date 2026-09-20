@@ -56,6 +56,9 @@ passive (read-only) WordPress scanners:
 # Version + CVE scan (Python 3, no pip packages needed)
 python3 security-audit/wp-vuln-scan.py https://your-site.com
 
+# Exploit-precondition check + penetration verdict (Python 3)
+python3 security-audit/wp-exposure-check.py https://your-site.com
+
 # Endpoint + header + SSL check (bash)
 ./security-audit/wp-security-check.sh https://your-site.com
 ```
