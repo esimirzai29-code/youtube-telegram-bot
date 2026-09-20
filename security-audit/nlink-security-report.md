@@ -125,6 +125,44 @@ Preferred-Languages: fa, en
 
 ---
 
+## 🔍 مرحله ۲: بازبینی کد لاراول (در حال انجام)
+
+فریم‌ورک **Laravel** تأیید شد. چون جزئیات پیاده‌سازی (هش، OTP، آپلود) نامشخص است،
+با دستورات زیر در پوشه پروژه، جواب دقیق به دست می‌آید — خروجی‌ها را برای تحلیل بفرست:
+
+```bash
+# ۱. هش رمز عبور (باید bcrypt یا argon باشد، نه md5/sha ساده)
+cat config/hashing.php
+grep -rn "Hash::make\|bcrypt(\|md5(\|sha1(" app/ | head -20
+
+# ۲. ریت‌لیمیت مسیرها (لاگین/ثبت‌نام/OTP باید throttle داشته باشند)
+grep -rn "throttle" routes/
+grep -rn "phone-auth\|otp\|verify\|sms" routes/ -i | head -20
+
+# ۳. XSS: خروجی escapeنشده در ویوها (مخصوصاً صفحات پروفایل عمومی)
+grep -rn "{!!" resources/views/ | head -30
+
+# ۴. تزریق SQL: کوئری خام (باید صفر یا با binding باشد)
+grep -rn "DB::raw\|whereRaw\|orderByRaw\|selectRaw" app/ | head -20
+
+# ۵. حالت دیباگ و محیط (تولید: APP_DEBUG=false و APP_ENV=production)
+grep -E "^(APP_DEBUG|APP_ENV|APP_KEY=)" .env | sed 's/APP_KEY=.*/APP_KEY=<hidden>/'
+
+# ۶. آسیب‌پذیری وابستگی‌ها
+composer audit
+```
+
+**تفسیر سریع:**
+| خروجی سالم ✅ | خروجی خطرناک 🔴 |
+|---|---|
+| `driver => bcrypt/argon2id` + `Hash::make` | `md5(` یا `sha1(` روی رمز |
+| `throttle:5,1` روی login/register/otp | نبود throttle روی این مسیرها |
+| صفر `{!!` در ویوهای پروفایل (یا فقط با محتوای امن) | `{!! $user->bio !!}` روی فیلد کاربرساز |
+| صفر `*Raw` (یا با `?` binding) | `whereRaw("... $input ...")` با الحاق رشته |
+| `APP_DEBUG=false` | `APP_DEBUG=true` در production (لو رفتن stack trace!) |
+
+---
+
 ## 🤖 اسکنر عمومی (از داخل ایران اجرا کن)
 
 ```bash
