@@ -1,0 +1,9 @@
+# Railway config for the تک‌نوشت website service.
+# In Railway: create a service from this repo and set Root Directory to "site".
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
