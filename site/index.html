@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تک‌نوشت | وبلاگ فارسی تکنولوژی و سبک زندگی</title>
+  <meta name="description" content="تک‌نوشت؛ وبلاگ فارسی درباره تکنولوژی، برنامه‌نویسی، هوش مصنوعی، کسب‌وکار و سبک زندگی." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✍️</text></svg>" />
+</head>
+<body>
+
+  <!-- هدر -->
+  <header class="header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-mark">✍️</span>
+        <span>تک‌نوشت<small>وبلاگ فارسی تکنولوژی</small></span>
+      </a>
+      <nav class="nav">
+        <a href="index.html" class="active">خانه</a>
+        <a href="index.html#articles">مقالات</a>
+        <a href="index.html#categories">دسته‌بندی‌ها</a>
+        <a href="about.html">درباره ما</a>
+        <a href="contact.html">تماس</a>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn" id="searchBtn" title="جستجو">🔎</button>
+        <button class="icon-btn" id="themeBtn" title="حالت شب/روز">🌙</button>
+        <button class="icon-btn menu-btn" id="menuBtn" title="منو">☰</button>
+      </div>
+    </div>
+    <nav class="mobile-nav" id="mobileNav">
+      <a href="index.html" class="active">🏠 خانه</a>
+      <a href="index.html#articles">📝 مقالات</a>
+      <a href="index.html#categories">📂 دسته‌بندی‌ها</a>
+      <a href="about.html">ℹ️ درباره ما</a>
+      <a href="contact.html">📞 تماس</a>
+    </nav>
+  </header>
+
+  <!-- جستجو -->
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="🔎 جستجو در مقالات... (مثلاً: هوش مصنوعی)" autocomplete="off" />
+      <div class="search-results" id="searchResults">
+        <div class="search-hint">چند حرف بنویسید تا نتایج نمایش داده شود ✍️</div>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+    <!-- هیرو -->
+    <section class="hero">
+      <div class="hero-grid" id="heroGrid"><!-- با JS پر می‌شود --></div>
+    </section>
+
+    <!-- آمار -->
+    <section class="stats" id="statsBar"></section>
+
+    <div class="layout">
+      <!-- ستون مقالات -->
+      <div>
+        <div class="section-head" id="articles">
+          <h2>📝 آخرین مقالات</h2>
+        </div>
+        <div class="filters" id="categoryFilters"></div>
+        <div class="toolbar">
+          <span class="result-count" id="resultCount"></span>
+          <select id="sortSelect">
+            <option value="new">🆕 جدیدترین</option>
+            <option value="popular">🔥 پربازدیدترین</option>
+            <option value="liked">❤️ محبوب‌ترین</option>
+            <option value="saved">🔖 نشان‌شده‌های من</option>
+          </select>
+        </div>
+        <div class="grid" id="articlesGrid"></div>
+        <div class="load-more-wrap">
+          <button class="btn btn-outline" id="loadMoreBtn">نمایش بیشتر ⬇️</button>
+        </div>
+      </div>
+
+      <!-- سایدبار -->
+      <aside class="sidebar">
+        <div class="widget" id="categories">
+          <h3>📂 دسته‌بندی‌ها</h3>
+          <div id="categoryList"></div>
+        </div>
+        <div class="widget">
+          <h3>🔥 پربازدیدترین‌ها</h3>
+          <div id="popularList"></div>
+        </div>
+        <div class="widget">
+          <h3>🏷️ برچسب‌ها</h3>
+          <div class="tag-cloud" id="tagCloud"></div>
+        </div>
+        <div class="widget newsletter">
+          <h3>📬 عضویت در خبرنامه</h3>
+          <p>هر هفته بهترین مقالات را در ایمیل‌تان دریافت کنید. بدون اسپم!</p>
+          <form class="newsletter-form" id="newsletterForm">
+            <input type="email" id="newsletterEmail" placeholder="ایمیل شما" required />
+            <button type="submit" class="btn">عضویت</button>
+          </form>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- فوتر -->
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <a href="index.html" class="logo"><span class="logo-mark">✍️</span><span>تک‌نوشت</span></a>
+        <p>تک‌نوشت یک وبلاگ فارسی مستقل است که درباره تکنولوژی، برنامه‌نویسی، هوش مصنوعی و سبک زندگی می‌نویسد. هدف ما، محتوای عمیق و کاربردی به زبان ساده است.</p>
+        <div class="socials">
+          <a href="#" title="تلگرام">📨</a>
+          <a href="#" title="اینستاگرام">📸</a>
+          <a href="#" title="لینکدین">💼</a>
+          <a href="#" title="یوتیوب">▶️</a>
+          <a href="#" title="گیت‌هاب">🐙</a>
+        </div>
+      </div>
+      <div>
+        <h4>دسترسی سریع</h4>
+        <ul>
+          <li><a href="index.html">خانه</a></li>
+          <li><a href="index.html#articles">مقالات</a></li>
+          <li><a href="about.html">درباره ما</a></li>
+          <li><a href="contact.html">تماس با ما</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>دسته‌بندی‌ها</h4>
+        <ul id="footerCats"></ul>
+      </div>
+      <div>
+        <h4>راهنما</h4>
+        <ul>
+          <li><a href="about.html">قوانین و حریم خصوصی</a></li>
+          <li><a href="contact.html">تبلیغات</a></li>
+          <li><a href="contact.html">فرصت‌های شغلی</a></li>
+          <li><a href="contact.html">پشتیبانی</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">© ۱۴۰۵ تک‌نوشت — ساخته‌شده با ❤️ به زبان فارسی</div>
+  </footer>
+
+  <button class="back-top" id="backTop">↑</button>
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

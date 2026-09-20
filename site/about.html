@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>درباره ما | تک‌نوشت</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✍️</text></svg>" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo"><span class="logo-mark">✍️</span><span>تک‌نوشت<small>وبلاگ فارسی تکنولوژی</small></span></a>
+      <nav class="nav">
+        <a href="index.html">خانه</a>
+        <a href="index.html#articles">مقالات</a>
+        <a href="index.html#categories">دسته‌بندی‌ها</a>
+        <a href="about.html" class="active">درباره ما</a>
+        <a href="contact.html">تماس</a>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn" id="searchBtn" title="جستجو">🔎</button>
+        <button class="icon-btn" id="themeBtn" title="حالت شب/روز">🌙</button>
+        <button class="icon-btn menu-btn" id="menuBtn" title="منو">☰</button>
+      </div>
+    </div>
+    <nav class="mobile-nav" id="mobileNav">
+      <a href="index.html">🏠 خانه</a>
+      <a href="index.html#articles">📝 مقالات</a>
+      <a href="index.html#categories">📂 دسته‌بندی‌ها</a>
+      <a href="about.html" class="active">ℹ️ درباره ما</a>
+      <a href="contact.html">📞 تماس</a>
+    </nav>
+  </header>
+
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="🔎 جستجو در مقالات..." autocomplete="off" />
+      <div class="search-results" id="searchResults"><div class="search-hint">چند حرف بنویسید ✍️</div></div>
+    </div>
+  </div>
+
+  <main class="container">
+    <div class="page-hero">
+      <h1>ℹ️ درباره تک‌نوشت</h1>
+      <p>داستان ما، تیم ما و چیزی که به آن باور داریم</p>
+    </div>
+
+    <section class="stats" id="statsBar"></section>
+
+    <div class="widget" style="margin-bottom: 24px;">
+      <h3>📖 داستان ما</h3>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        تک‌نوشت در سال ۱۴۰۳ با یک ایده ساده شروع شد: <b style="color: var(--text);">محتوای فارسی عمیق و کاربردی، بدون حاشیه و کپی.</b>
+        امروز با افتخار یکی از وبلاگ‌های مستقل فارسی هستیم که هر هفته هزاران خواننده دارد.
+        ما باور داریم دانش باید آزاد، ساده و قابل‌استفاده باشد؛ به‌همین دلیل همه مقالات ما رایگان و بدون محدودیت منتشر می‌شود.
+      </p>
+    </div>
+
+    <div class="section-head"><h2>👥 تیم تحریریه</h2></div>
+    <div class="about-grid" id="teamGrid"></div>
+
+    <div class="section-head"><h2>💎 ارزش‌های ما</h2></div>
+    <div class="about-grid">
+      <div class="widget" style="text-align:center"><div style="font-size:2.5rem">🎯</div><h3>کیفیت مهم‌تر از کمیت</h3><p style="font-size:.88rem;color:var(--text-muted)">هفته‌ای ۲ مقاله عمیق، بهتر از روزی ۱۰ مطلب سطحی است.</p></div>
+      <div class="widget" style="text-align:center"><div style="font-size:2.5rem">🤝</div><h3>صداقت با خواننده</h3><p style="font-size:.88rem;color:var(--text-muted)">تبلیغات را شفاف اعلام می‌کنیم و نظر واقعی‌مان را می‌نویسیم.</p></div>
+      <div class="widget" style="text-align:center"><div style="font-size:2.5rem">🌱</div><h3>رشد همراه هم</h3><p style="font-size:.88rem;color:var(--text-muted)">جامعه خوانندگان ما، بزرگ‌ترین دارایی ماست.</p></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <a href="index.html" class="logo"><span class="logo-mark">✍️</span><span>تک‌نوشت</span></a>
+        <p>تک‌نوشت یک وبلاگ فارسی مستقل است که درباره تکنولوژی، برنامه‌نویسی، هوش مصنوعی و سبک زندگی می‌نویسد.</p>
+        <div class="socials"><a href="#">📨</a><a href="#">📸</a><a href="#">💼</a><a href="#">▶️</a></div>
+      </div>
+      <div><h4>دسترسی سریع</h4><ul><li><a href="index.html">خانه</a></li><li><a href="index.html#articles">مقالات</a></li><li><a href="about.html">درباره ما</a></li><li><a href="contact.html">تماس با ما</a></li></ul></div>
+      <div><h4>دسته‌بندی‌ها</h4><ul id="footerCats"></ul></div>
+      <div><h4>راهنما</h4><ul><li><a href="about.html">قوانین و حریم خصوصی</a></li><li><a href="contact.html">تبلیغات</a></li><li><a href="contact.html">پشتیبانی</a></li></ul></div>
+    </div>
+    <div class="footer-bottom">© ۱۴۰۵ تک‌نوشت — ساخته‌شده با ❤️ به زبان فارسی</div>
+  </footer>
+
+  <button class="back-top" id="backTop">↑</button>
+  <div class="toast-wrap" id="toastWrap"></div>
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
