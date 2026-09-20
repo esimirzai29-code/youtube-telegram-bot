@@ -7,7 +7,7 @@ WP Exposure Check — بررسی «پیش‌نیازهای نفوذ» وردپر
 فقط با درخواست‌های خواندنی (GET) بررسی می‌کند که آیا پیش‌نیازهای
 سوءاستفاده از باگ‌های شناخته‌شده روی سایت وجود دارد یا نه:
   ۱. ثبت‌نام کاربر باز است؟ (پیش‌نیاز باگ‌های نیازمند حساب کاربری)
-  ۲. فرم با فیلد آپلود فایل منتشر شده؟ (پیش‌نیاز CVE-2026-32475 پرو)
+  ۲. فرم با فیلد آپلود فایل منتشر شده؟ (همه صفحات سایت‌مپ! پیش‌نیاز CVE-2026-32475 پرو)
   ۳. نام کاربری از ?author=1 لو می‌رود؟ (با دنبال‌نکردن ریدایرکت)
   ۴. لیست فایل‌های uploads دیده می‌شود؟
   ۵. نسخه‌های کلیدی + حکم نهایی هر CVE
@@ -23,7 +23,8 @@ import urllib.parse
 import urllib.request
 
 TIMEOUT = 12
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WP-Exposure-Check/1.0"}
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WP-Exposure-Check/1.1"}
+PAGE_CAP = 30
 
 
 def http_get(url):
@@ -74,6 +75,32 @@ def stable_tag(readme_text):
     return m.group(1).strip() if m else None
 
 
+def ver_tuple(ver, n=4):
+    nums = re.findall(r"\d+", ver or "")
+    return tuple(map(int, nums[:n])) if nums else None
+
+
+def sitemap_urls(site, cap=PAGE_CAP):
+    """استخراج آدرس صفحات از سایت‌مپ (فقط همین هاست، حداکثر cap آدرس)"""
+    urls = []
+    host = urllib.parse.urlsplit(site).hostname
+    _, idx, _ = http_get(site + "/sitemap_index.xml")
+    smaps = re.findall(r"<loc>([^<]+)</loc>", idx)
+    if not smaps:
+        smaps = [site + "/page-sitemap.xml", site + "/post-sitemap.xml",
+                 site + "/product-sitemap.xml"]
+    for sm in smaps:
+        if urllib.parse.urlsplit(sm).hostname != host:
+            continue
+        _, xml, _ = http_get(sm)
+        for u in re.findall(r"<loc>([^<]+)</loc>", xml):
+            if urllib.parse.urlsplit(u).hostname == host and u not in urls:
+                urls.append(u)
+            if len(urls) >= cap:
+                return urls
+    return urls
+
+
 def check(target):
     site = target.rstrip("/")
     print(f"\n🎯 بررسی سطح حمله: {site}\n" + "=" * 55)
@@ -98,16 +125,23 @@ def check(target):
     results["registration_open"] = reg_open
     results["registration_where"] = reg_where
 
-    # ---- ۲. فرم آپلود ----
+    # ---- ۲. فرم آپلود (همه صفحات سایت‌مپ) ----
     print("\n--- ۲. آیا فرم با فیلد آپلود فایل منتشر شده؟ ---")
+    pages = [site + p for p in ["/", "/shop/", "/contact-us/", "/contact/", "/about-us/"]]
+    sm_urls = sitemap_urls(site)
+    print(f"  ℹ️ {len(sm_urls)} آدرس از سایت‌مپ پیدا شد؛ در حال بررسی...")
+    for u in sm_urls:
+        if u not in pages:
+            pages.append(u)
     upload_pages = []
-    for page in ["/", "/shop/", "/contact-us/", "/contact/", "/about-us/"]:
-        code, html, _ = http_get(site + page)
+    for page in pages[:PAGE_CAP + 5]:
+        code, html, _ = http_get(page)
         if code == 200 and has_file_upload(html):
-            upload_pages.append(page)
-            print(f"  🔴 فیلد آپلود فایل در: {page}")
+            short = page.replace(site, "") or "/"
+            upload_pages.append(short)
+            print(f"  🔴 فیلد آپلود فایل در: {short}")
     if not upload_pages:
-        print("  ✅ در صفحات اصلی فیلد آپلود فایل پیدا نشد")
+        print(f"  ✅ در {min(len(pages), PAGE_CAP + 5)} صفحه بررسی‌شده فیلد آپلود فایل پیدا نشد")
     results["upload_forms"] = upload_pages
 
     # ---- ۳. نشت نام کاربری ----
@@ -115,7 +149,7 @@ def check(target):
     status, loc = get_no_redirect(site + "/?author=1")
     leaked = ""
     if status in (301, 302, 307, 308) and "/author/" in loc:
-        leaked = loc.split("/author/")[-1].split("/")[0].split("?")[0]
+        leaked = urllib.parse.unquote(loc.split("/author/")[-1].split("/")[0].split("?")[0])
         print(f"  🔴 نام کاربری لو رفت: {leaked}")
     elif status == 200:
         print("  🟡 پاسخ 200 بدون ریدایرکت (احتمالاً صفحه نویسنده مستقیم باز است)")
@@ -155,8 +189,8 @@ def check(target):
     verdicts = []
 
     # المنتور رایگان
-    ev = versions.get("elementor")
-    if ev and tuple(map(int, re.findall(r"\d+", ev)[:3])) >= (4, 0, 5):
+    evt = ver_tuple(versions.get("elementor"), 3)
+    if evt and evt >= (4, 0, 5):
         verdicts.append(("🟢", "باگ‌های المنتور رایگان: نسخه امن است."))
     elif reg_open:
         verdicts.append(("🟠", "باگ‌های المنتور: ثبت‌نام باز است! اگر نقش پیش‌فرض ویرایشگر (یا بالاتر) باشد، مهاجم می‌تواند حساب بگیرد و از XSSها استفاده کند → در تنظیمات → عمومی، نقش پیش‌فرض را چک کن (باید مشترک/customer باشد)."))
@@ -167,20 +201,25 @@ def check(target):
     if upload_pages:
         verdicts.append(("🔴", f"نقص آپلود پرو (‏CVSS 9.8‏): فیلد آپلود در {len(upload_pages)} صفحه منتشر شده ({', '.join(upload_pages)}). اگر نسخه پرو زیر 4.2.2 است → ریسک نفوذ واقعی! نسخه پرو را در پیشخوان چک و آپدیت کن."))
     else:
-        verdicts.append(("🟡", "نقص آپلود پرو (‏CVSS 9.8‏): در صفحات اصلی فیلد آپلود پیدا نشد → سطح حمله بسته به نظر می‌رسد، ولی چون نسخه پرو قدیمی است، همچنان آپدیت کن. (اگر فرم آپلود در صفحه دیگری داری، آن را هم چک کن)"))
+        verdicts.append(("🟡", "نقص آپلود پرو (‏CVSS 9.8‏): در صفحات بررسی‌شده فیلد آپلود پیدا نشد → سطح حمله بسته به نظر می‌رسد، ولی چون نسخه پرو قدیمی است، همچنان آپدیت کن."))
 
-    # رنک‌مث
-    rv = versions.get("seo-by-rank-math")
-    if rv and tuple(map(int, re.findall(r"\d+", rv)[:4])) >= (1, 0, 277):
-        verdicts.append(("🟢", "باگ‌های رنک‌مث: نسخه امن است."))
-    elif reg_open:
-        verdicts.append(("🟠", "باگ رنک‌مث (‏CVE-2026-34892‏): با حساب سطح مشترک قابل سوءاستفاده است و ثبت‌نام باز است → آپدیت به 1.0.277 فوری شد."))
+    # رنک‌مث (دو سطحی و دقیق)
+    rvt = ver_tuple(versions.get("seo-by-rank-math"))
+    if rvt and rvt >= (1, 0, 277):
+        verdicts.append(("🟢", "باگ‌های رنک‌مث: نسخه امن است (1.0.277+)."))
+    elif rvt and rvt >= (1, 0, 271, 1):
+        verdicts.append(("🟡", "رنک‌مث: از باگ سطح مشترک (‏CVE-2026-34892‏، تا 1.0.271) در امانی ✅ ولی CVE-2026-77786 (نیازمند نقش Editor) شاملت می‌شود → کاربر Editor ناآشنا نداشته باش و به 1.0.277 آپدیت کن."))
+    elif rvt:
+        if reg_open:
+            verdicts.append(("🔴", "رنک‌مث زیر 1.0.271.1 + ثبت‌نام باز = باگ سطح مشترک (‏CVE-2026-34892‏، ‏CVSS 6.5‏) از بیرون قابل سوءاستفاده است! فوراً به 1.0.277+ آپدیت کن."))
+        else:
+            verdicts.append(("🟠", "رنک‌مث زیر 1.0.271.1 است ولی ثبت‌نام بسته است → ریسک کمتر، ولی فوراً به 1.0.277+ آپدیت کن."))
     else:
-        verdicts.append(("🟡", "باگ رنک‌مث: نیاز به حساب کاربری دارد و ثبت‌نام بسته است → ریسک کم، ولی آپدیت به 1.0.277 را انجام بده."))
+        verdicts.append(("🟡", "نسخه رنک‌مث مشخص نشد — دستی در پیشخوان چک کن (باید 1.0.277+ باشد)."))
 
     # نشت نام کاربری
     if leaked:
-        verdicts.append(("🟡", f"نشت نام کاربری ({leaked}): به‌تنهایی نفوذ نیست ولی نصف راه Brute-force است → با قطعه htaccess ببند (یافته ۷ گزارش)."))
+        verdicts.append(("🟠", f"نشت نام کاربری ({leaked}): ترکیب «نام کاربری ادمین لو رفته + صفحه ورود باز از ایران» = هدف Brute-force! → نام admin را عوض کن + 2FA + محدودسازی ورود + بستن ?author (یافته ۷ گزارش)."))
     else:
         verdicts.append(("🟢", "نشت نام کاربری: بسته است."))
 
@@ -205,6 +244,11 @@ def selftest():
     assert has_file_upload("<INPUT TYPE='FILE'>")
     assert not has_file_upload('<form><input type="text"></form>')
     assert stable_tag("Stable tag: 1.0.272") == "1.0.272"
+    assert ver_tuple("1.0.272") == (1, 0, 272)
+    assert ver_tuple("1.0.272") >= (1, 0, 271, 1)
+    assert ver_tuple("1.0.272") < (1, 0, 277)
+    assert ver_tuple("3.30.0", 3) < (4, 0, 5)
+    assert ver_tuple(None) is None
     print("✅ selftest passed")
 
 
