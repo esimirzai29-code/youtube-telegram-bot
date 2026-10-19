@@ -1,0 +1,38 @@
+name: fetch-ctf
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download challenge
+        run: |
+          mkdir -p ctf
+          curl -sSL -k -A "Mozilla/5.0" -o ctf/MP3Player.zip "https://api.unlim.ir/media/ctfuploads/ChallengesFiles/2024/09/16/MP3Player.zip"
+          ls -l ctf/
+          file ctf/MP3Player.zip
+          sha256sum ctf/MP3Player.zip
+          head -c 200 ctf/MP3Player.zip | xxd | head -5
+
+      - name: Extract
+        run: |
+          cd ctf
+          unzip -o -O cp437 MP3Player.zip -d extracted || unzip -o MP3Player.zip -d extracted
+          find extracted -type f -exec ls -l {} \;
+          find extracted -type f -exec file {} \;
+
+      - name: Commit artifacts
+        run: |
+          git config user.name "arena-bot"
+          git config user.email "arena-bot@users.noreply.github.com"
+          git add -f ctf
+          if git diff --cached --quiet; then echo "nothing to commit"; else git commit -m "chore: add CTF challenge artifacts (temp)"; git push origin HEAD:${GITHUB_REF_NAME}; fi
